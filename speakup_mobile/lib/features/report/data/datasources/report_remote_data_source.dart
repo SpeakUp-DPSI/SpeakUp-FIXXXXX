@@ -91,6 +91,8 @@ class ReportRemoteDataSource {
     try {
       final participants = data.remove('participants') as List<dynamic>?;
       
+      data['reporter_id'] = supabaseClient.auth.currentUser?.id;
+
       final reportResponse = await supabaseClient.from('reports').insert(data).select().single();
       final reportId = reportResponse['id'];
 
