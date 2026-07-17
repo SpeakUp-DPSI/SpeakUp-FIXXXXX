@@ -135,15 +135,21 @@ class MediationRemoteDataSource {
     }
   }
 
-  Future<void> updateParticipantStatus(String id, String status) async {
+  Future<void> updateParticipantStatus(String mediationId, String status, {String? reason}) async {
     try {
-      final userId = supabaseClient.auth.currentUser?.id;
-      if (userId == null) throw Exception('User not logged in');
-      
+      final currentUserId = supabaseClient.auth.currentUser?.id;
+      if (currentUserId == null) throw Exception('User not logged in');
+
+      final updateData = <String, dynamic>{'status': status};
+      if (reason != null && reason.isNotEmpty) {
+        updateData['reason'] = reason;
+      }
+
       await supabaseClient
           .from('mediation_participants')
-          .update({'status': status})
-          .match({'mediation_id': id, 'user_id': userId});
+          .update(updateData)
+          .eq('mediation_id', mediationId)
+          .eq('user_id', currentUserId);
     } catch (e) {
       throw Exception(e.toString());
     }

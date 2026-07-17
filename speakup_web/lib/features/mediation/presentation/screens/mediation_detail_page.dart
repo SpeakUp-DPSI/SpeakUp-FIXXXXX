@@ -116,6 +116,10 @@ class _MediationDetailPageState extends ConsumerState<MediationDetailPage>
                       _buildInfoSection(m),
                       const SizedBox(height: 16),
 
+                      // ─── Status Partisipan ────────────────────────────
+                      _buildParticipantsSection(m),
+                      const SizedBox(height: 16),
+
                       // ─── Timeline ─────────────────────────────────────
                       _buildTimeline(m.status),
                       const SizedBox(height: 16),
@@ -255,42 +259,113 @@ class _MediationDetailPageState extends ConsumerState<MediationDetailPage>
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Container(
-                      width: 36,
-                      height: 36,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF2563EB).withOpacity(0.08),
-                        borderRadius: BorderRadius.circular(10),
+                    Icon(item.icon, size: 16, color: const Color(0xFF6B7280)),
+                    const SizedBox(width: 8),
+                    SizedBox(
+                      width: 120,
+                      child: Text(
+                        item.label,
+                        style: const TextStyle(
+                          fontSize: 13,
+                          color: Color(0xFF6B7280),
+                        ),
                       ),
-                      child: Icon(item.icon, color: const Color(0xFF2563EB), size: 18),
                     ),
-                    const SizedBox(width: 12),
                     Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            item.label,
-                            style: const TextStyle(
-                              fontSize: 11,
-                              color: Color(0xFF6B7280),
-                            ),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            item.value,
-                            style: const TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w500,
-                              color: Color(0xFF111827),
-                            ),
-                          ),
-                        ],
+                      child: Text(
+                        item.value,
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                          color: Color(0xFF111827),
+                        ),
                       ),
                     ),
                   ],
                 ),
               )),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildParticipantsSection(MediationModel m) {
+    if (m.participants.isEmpty) return const SizedBox();
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 300),
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Status Kehadiran Partisipan',
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 16,
+              color: Color(0xFF111827),
+            ),
+          ),
+          const SizedBox(height: 16),
+          ...m.participants.map((p) {
+            Color pColor = AppTheme.warning600;
+            String pLabel = 'Menunggu';
+            if (p.status == 'accepted') {
+              pColor = AppTheme.success600;
+              pLabel = 'Hadir';
+            } else if (p.status == 'rejected') {
+              pColor = AppTheme.danger600;
+              pLabel = 'Berhalangan';
+            }
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF9FAFB),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: const Color(0xFFE5E7EB)),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          p.userName ?? 'User #${p.userId}',
+                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: pColor.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: pColor),
+                          ),
+                          child: Text(pLabel, style: TextStyle(color: pColor, fontSize: 10, fontWeight: FontWeight.bold)),
+                        ),
+                      ],
+                    ),
+                    if (p.status == 'rejected' && p.reason != null && p.reason!.isNotEmpty) ...[
+                      const SizedBox(height: 8),
+                      Text('Alasan: ${p.reason}', style: TextStyle(fontSize: 12, color: AppTheme.danger600, fontStyle: FontStyle.italic)),
+                    ]
+                  ],
+                ),
+              ),
+            );
+          }),
         ],
       ),
     );

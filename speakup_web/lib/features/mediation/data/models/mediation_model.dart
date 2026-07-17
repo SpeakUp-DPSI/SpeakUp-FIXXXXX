@@ -56,12 +56,14 @@ class MediationParticipantModel {
   final String userId;
   final String status;
   final String? userName;
+  final String? reason;
 
   MediationParticipantModel({
     required this.id,
     required this.userId,
     required this.status,
     this.userName,
+    this.reason,
   });
 
   factory MediationParticipantModel.fromJson(Map<String, dynamic> json) {
@@ -70,6 +72,7 @@ class MediationParticipantModel {
       userId: json['user_id']?.toString() ?? '',
       status: json['status'] ?? 'pending',
       userName: json['user']?['name']?.toString(),
+      reason: json['reason']?.toString(),
     );
   }
 }

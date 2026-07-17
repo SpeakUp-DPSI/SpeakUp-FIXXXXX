@@ -17,11 +17,11 @@ class MediationScreen extends ConsumerStatefulWidget {
 class _MediationScreenState extends ConsumerState<MediationScreen> {
   bool _isUpdating = false;
 
-  Future<void> _updateStatus(String mediationId, String status) async {
+  Future<void> _updateStatus(String mediationId, String status, {String? reason}) async {
     setState(() => _isUpdating = true);
     try {
       final dataSource = ref.read(mediationRemoteDataSourceProvider);
-      await dataSource.updateParticipantStatus(mediationId, status);
+      await dataSource.updateParticipantStatus(mediationId, status, reason: reason);
       ref.invalidate(myMediationsProvider);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -43,6 +43,46 @@ class _MediationScreenState extends ConsumerState<MediationScreen> {
     } finally {
       if (mounted) setState(() => _isUpdating = false);
     }
+  }
+
+  void _showRejectDialog(String mediationId) {
+    final reasonController = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Alasan Berhalangan'),
+          content: TextField(
+            controller: reasonController,
+            decoration: const InputDecoration(
+              hintText: 'Masukkan alasan Anda...',
+              border: OutlineInputBorder(),
+            ),
+            maxLines: 3,
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Batal'),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(backgroundColor: AppTheme.danger600, foregroundColor: Colors.white),
+              onPressed: () {
+                if (reasonController.text.trim().isEmpty) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Alasan wajib diisi.'), backgroundColor: AppTheme.warning600),
+                  );
+                  return;
+                }
+                Navigator.pop(context);
+                _updateStatus(mediationId, 'rejected', reason: reasonController.text.trim());
+              },
+              child: const Text('Kirim'),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   @override
@@ -192,7 +232,7 @@ class _MediationScreenState extends ConsumerState<MediationScreen> {
                       foregroundColor: AppTheme.danger600,
                       side: const BorderSide(color: AppTheme.danger600),
                     ),
-                    onPressed: () => _updateStatus(mediation.id, 'rejected'),
+                    onPressed: () => _showRejectDialog(mediation.id),
                     child: const Text('Berhalangan'),
                   ),
                 ),
