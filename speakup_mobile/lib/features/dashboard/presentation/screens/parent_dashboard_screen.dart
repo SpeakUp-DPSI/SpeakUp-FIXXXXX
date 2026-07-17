@@ -122,6 +122,48 @@ class ParentDashboardScreen extends ConsumerWidget {
                   );
                 },
               ),
+              const SizedBox(height: 32),
+              const Text(
+                'Jadwal Mediasi Mendatang',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppTheme.neutral900),
+              ),
+              const SizedBox(height: 16),
+              reportsAsync.when(
+                loading: () => const Center(child: CircularProgressIndicator()),
+                error: (err, stack) => const SizedBox.shrink(),
+                data: (reports) {
+                  final mediationReports = reports
+                      .where((r) =>
+                          r.status == 'mediation' &&
+                          r.incidentDate != null)
+                      .take(3)
+                      .toList();
+                  if (mediationReports.isEmpty) {
+                    return EmptyStateWidget(
+                      icon: Icons.calendar_today_outlined,
+                      title: 'Belum ada jadwal mediasi',
+                      subtitle: 'Tidak ada jadwal mediasi terkait anak Anda saat ini.',
+                      iconColor: AppTheme.neutral400,
+                    );
+                  }
+                  return Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: AppTheme.neutral300),
+                    ),
+                    child: Column(
+                      children: [
+                        for (var i = 0; i < mediationReports.length; i++) ...[
+                          if (i > 0)
+                            const Divider(height: 1, indent: 16, endIndent: 16),
+                          _mediationItemFromReport(mediationReports[i]),
+                        ],
+                      ],
+                    ),
+                  );
+                },
+              ),
             ],
           ),
         ),
@@ -200,7 +242,57 @@ class ParentDashboardScreen extends ConsumerWidget {
       case 'processing': return AppTheme.info600;
       case 'completed': return AppTheme.success600;
       case 'rejected': return AppTheme.danger600;
-      default: return AppTheme.neutral500;
+      default: return AppTheme.primary600;
     }
+  }
+
+  Widget _mediationItemFromReport(ReportModel report) {
+    final monthNames = [
+      '', 'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+      'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+    ];
+    final dateParts = (report.incidentDate ?? '').split('-');
+    final day = dateParts.length >= 3 ? dateParts[2].substring(0, 2) : '--';
+    final monthIdx = dateParts.length >= 2 ? int.tryParse(dateParts[1]) ?? 1 : 1;
+    final month = monthNames[monthIdx].toUpperCase().substring(0, 3);
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      child: Row(
+        children: [
+          Column(
+            children: [
+              Text(day,
+                  style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 18,
+                      color: AppTheme.neutral900)),
+              Text(month,
+                  style: const TextStyle(
+                      fontSize: 11, color: AppTheme.neutral500)),
+            ],
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(report.reportCode,
+                    style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 13,
+                        color: AppTheme.primary600)),
+                Text(report.category ?? report.title,
+                    style: const TextStyle(
+                        fontSize: 12, color: AppTheme.neutral600)),
+                Text(report.incidentLocation ?? '',
+                    style: const TextStyle(
+                        fontSize: 11, color: AppTheme.neutral400)),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }

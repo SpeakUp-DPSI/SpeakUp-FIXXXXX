@@ -37,18 +37,65 @@ class MediationRemoteDataSource {
 
   Future<MediationModel> createMediation(String reportId, Map<String, dynamic> data) async {
     try {
+      final currentUserId = supabaseClient.auth.currentUser?.id;
+      if (currentUserId == null) throw Exception('User not logged in');
+
       final insertData = {
         ...data,
         'report_id': reportId,
+        'mediator_id': currentUserId,
       };
       
+      // 1. Insert Mediation
       final response = await supabaseClient
           .from('mediations')
           .insert(insertData)
-          .select('*, mediator:profiles!mediations_mediator_id_fkey(*), report:reports!mediations_report_id_fkey(*), participants:mediation_participants(*)')
+          .select()
           .single();
           
-      return MediationModel.fromJson(response);
+      final mediationId = response['id'];
+      
+      // 2. Update report status to 'mediation'
+      await supabaseClient.from('reports').update({'status': 'mediation'}).eq('id', reportId);
+
+      // 3. Get reporter_id from reports
+      final reportResponse = await supabaseClient
+          .from('reports')
+          .select('reporter_id')
+          .eq('id', reportId)
+          .single();
+          
+      final reporterId = reportResponse['reporter_id'];
+      
+      // 4. Get Ortu (parent) of this reporter
+      final parentResponse = await supabaseClient
+          .from('profiles')
+          .select('id')
+          .eq('child_id', reporterId)
+          .maybeSingle();
+          
+      // 5. Insert Participants
+      final participantsData = [
+        {'mediation_id': mediationId, 'user_id': reporterId, 'status': 'pending'},
+      ];
+      if (parentResponse != null && parentResponse['id'] != null) {
+        participantsData.add({
+          'mediation_id': mediationId,
+          'user_id': parentResponse['id'],
+          'status': 'pending',
+        });
+      }
+      
+      await supabaseClient.from('mediation_participants').insert(participantsData);
+      
+      // 6. Fetch full mediation to return
+      final finalResponse = await supabaseClient
+          .from('mediations')
+          .select('*, mediator:profiles!mediations_mediator_id_fkey(*), report:reports!mediations_report_id_fkey(*), participants:mediation_participants(*)')
+          .eq('id', mediationId)
+          .single();
+          
+      return MediationModel.fromJson(finalResponse);
     } catch (e) {
       throw Exception(e.toString());
     }
