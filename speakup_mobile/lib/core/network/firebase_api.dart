@@ -1,6 +1,6 @@
 import 'package:firebase_messaging/firebase_messaging.dart';
-import 'package:dio/dio.dart';
-import '../../core/network/token_manager.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../core/network/supabase_client.dart';
 
 class FirebaseApi {
   final _firebaseMessaging = FirebaseMessaging.instance;
@@ -36,19 +36,13 @@ class FirebaseApi {
 
   Future<void> _sendFcmTokenToBackend(String token) async {
     try {
-      final tokenManager = TokenManager();
-      final authToken = await tokenManager.getToken();
-      if (authToken == null) return;
+      final user = SupabaseService.client.auth.currentUser;
+      if (user == null) return;
 
-      final dio = Dio(BaseOptions(
-        baseUrl: _baseUrl,
-        headers: {
-          'Accept': 'application/json',
-          'Authorization': 'Bearer $authToken',
-        },
-      ));
-
-      await dio.post('/profile/fcm-token', data: {'fcm_token': token});
+      await SupabaseService.client
+          .from('profiles')
+          .update({'fcm_token': token})
+          .eq('id', user.id);
     } catch (e) {
       print('Failed to send FCM token: $e');
     }

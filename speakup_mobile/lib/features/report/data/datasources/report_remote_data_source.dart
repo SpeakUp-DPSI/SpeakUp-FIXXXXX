@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:image_picker/image_picker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../../core/network/supabase_client.dart';
 import '../models/report_model.dart';
@@ -47,12 +48,9 @@ class ReportRemoteDataSource {
         query = query.eq('category', category);
       }
 
-      PostgrestTransformBuilder orderedQuery;
-      if (sort == 'oldest') {
-        orderedQuery = query.order('created_at', ascending: true);
-      } else {
-        orderedQuery = query.order('created_at', ascending: false);
-      }
+      var orderedQuery = sort == 'oldest' 
+          ? query.order('created_at', ascending: true)
+          : query.order('created_at', ascending: false);
 
       final response = await orderedQuery.range(from, to).count(CountOption.exact);
 
@@ -89,18 +87,28 @@ class ReportRemoteDataSource {
     }
   }
 
-  Future<ReportModel> createReport(Map<String, dynamic> data, {List<String>? filePaths}) async {
+  Future<ReportModel> createReport(Map<String, dynamic> data, {List<XFile>? files}) async {
     try {
+      final participants = data.remove('participants') as List<dynamic>?;
+      
       final reportResponse = await supabaseClient.from('reports').insert(data).select().single();
       final reportId = reportResponse['id'];
 
-      if (filePaths != null && filePaths.isNotEmpty) {
-        for (var path in filePaths) {
-          final file = File(path);
-          final fileName = path.split('/').last;
+      if (participants != null && participants.isNotEmpty) {
+        final participantData = participants.map((p) => {
+          ...p as Map<String, dynamic>,
+          'report_id': reportId,
+        }).toList();
+        await supabaseClient.from('report_participants').insert(participantData);
+      }
+
+      if (files != null && files.isNotEmpty) {
+        for (var file in files) {
+          final bytes = await file.readAsBytes();
+          final fileName = file.name;
           final storagePath = '$reportId/$fileName';
           
-          await supabaseClient.storage.from('evidence').upload(storagePath, file);
+          await supabaseClient.storage.from('evidence').uploadBinary(storagePath, bytes);
           final fileUrl = supabaseClient.storage.from('evidence').getPublicUrl(storagePath);
           
           await supabaseClient.from('evidence').insert({

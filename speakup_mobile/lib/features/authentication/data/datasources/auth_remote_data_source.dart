@@ -48,11 +48,28 @@ class AuthRemoteDataSource {
 
       if (response.user == null) throw Exception('Sign up failed: User is null');
 
-      final profileResponse = await supabaseClient
+      var profileResponse = await supabaseClient
           .from('profiles')
           .select()
           .eq('id', response.user!.id)
           .maybeSingle();
+
+      if (profileResponse == null) {
+        final newProfile = {
+          'id': response.user!.id,
+          'email': email,
+          'name': data['name'],
+          'phone': data['phone'],
+          'role': data['role'] ?? 'siswa',
+        };
+        await supabaseClient.from('profiles').insert(newProfile);
+        
+        profileResponse = await supabaseClient
+            .from('profiles')
+            .select()
+            .eq('id', response.user!.id)
+            .maybeSingle();
+      }
 
       if (profileResponse != null && profileResponse['role'] != null) {
         profileResponse['roles'] = [profileResponse['role']];

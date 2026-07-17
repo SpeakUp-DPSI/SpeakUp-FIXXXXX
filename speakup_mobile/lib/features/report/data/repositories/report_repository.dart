@@ -1,4 +1,5 @@
 import '../datasources/report_remote_data_source.dart';
+import 'package:image_picker/image_picker.dart';
 import '../models/report_model.dart';
 
 class ReportRepository {
@@ -14,8 +15,8 @@ class ReportRepository {
     return await remoteDataSource.getReportById(id);
   }
 
-  Future<ReportModel> createReport(Map<String, dynamic> data, {List<String>? filePaths}) {
-    return remoteDataSource.createReport(data, filePaths: filePaths);
+  Future<ReportModel> createReport(Map<String, dynamic> data, {List<XFile>? files}) {
+    return remoteDataSource.createReport(data, files: files);
   }
 
   Future<void> updateStatus(String reportId, String status, {String? notes}) {

@@ -4,20 +4,23 @@ import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../widgets/auth_stepper.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../providers/auth_provider.dart';
 
 // ────────────────────────────────────────────────────────────────────────────
 // RegisterScreen — Controller utama multi-step register
 // ────────────────────────────────────────────────────────────────────────────
 
-class RegisterScreenWeb extends StatefulWidget {
+class RegisterScreenWeb extends ConsumerStatefulWidget {
   const RegisterScreenWeb({super.key});
 
   @override
-  State<RegisterScreenWeb> createState() => _RegisterScreenWebState();
+  ConsumerState<RegisterScreenWeb> createState() => _RegisterScreenWebState();
 }
 
-class _RegisterScreenWebState extends State<RegisterScreenWeb> {
+class _RegisterScreenWebState extends ConsumerState<RegisterScreenWeb> {
   int _currentStep = 1;
+  bool _isLoading = false;
 
   // Form data yang dikumpulkan antar step
   String _selectedRole = 'Siswa';
@@ -53,6 +56,38 @@ class _RegisterScreenWebState extends State<RegisterScreenWeb> {
       setState(() => _currentStep--);
     } else {
       context.pop();
+    }
+  }
+
+  Future<void> _handleRegister() async {
+    setState(() => _isLoading = true);
+    try {
+      final data = {
+        'name': _nameCtrl.text,
+        'phone': _phoneCtrl.text,
+        'nisn': _nisnCtrl.text,
+        'birth_date': _birthDateCtrl.text,
+        'role': _selectedRole.toLowerCase().replaceAll(' ', '_'),
+      };
+      
+      await ref.read(authProvider.notifier).signUp(
+        _emailCtrl.text,
+        _passwordCtrl.text,
+        data,
+      );
+      
+      _goNext();
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('Registrasi gagal: $e'),
+          backgroundColor: AppTheme.danger600,
+        ));
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 
@@ -128,8 +163,9 @@ class _RegisterScreenWebState extends State<RegisterScreenWeb> {
           key: const ValueKey(3),
           method: _verificationMethod,
           destination: _verificationMethod == 'email' ? _emailCtrl.text : _phoneCtrl.text,
-          onVerified: _goNext,
+          onVerified: _handleRegister,
           onBack: _goBack,
+          isLoading: _isLoading,
         );
       case 4:
         return _Step4Selesai(
@@ -720,6 +756,7 @@ class _MethodCard extends StatelessWidget {
 class _Step3InputOTP extends StatefulWidget {
   final String method, destination;
   final VoidCallback onVerified, onBack;
+  final bool isLoading;
 
   const _Step3InputOTP({
     super.key,
@@ -727,6 +764,7 @@ class _Step3InputOTP extends StatefulWidget {
     required this.destination,
     required this.onVerified,
     required this.onBack,
+    this.isLoading = false,
   });
 
   @override
@@ -1064,19 +1102,24 @@ class _Step3InputOTPState extends State<_Step3InputOTP> {
                   width: double.infinity,
                   height: 52,
                   child: ElevatedButton(
-                    onPressed: _verify,
+                    onPressed: widget.isLoading ? null : _verify,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppTheme.primary600,
                       shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(14)),
                     ),
-                    child: const Text(
-                      'Verifikasikan Sekarang',
-                      style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white),
-                    ),
+                    child: widget.isLoading 
+                      ? const SizedBox(
+                          width: 24, height: 24,
+                          child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.5),
+                        )
+                      : const Text(
+                          'Verifikasikan Sekarang',
+                          style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white),
+                        ),
                   ),
                 ),
                 const SizedBox(height: 16),

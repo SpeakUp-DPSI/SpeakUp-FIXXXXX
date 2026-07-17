@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:image_picker/image_picker.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/network/supabase_client.dart';
 import '../../data/datasources/report_remote_data_source.dart';
@@ -143,11 +144,11 @@ class CreateReportNotifier extends AsyncNotifier<ReportModel?> {
     return null;
   }
 
-  Future<ReportModel?> create(Map<String, dynamic> data, {List<String>? filePaths}) async {
+  Future<ReportModel?> create(Map<String, dynamic> data, {List<XFile>? files}) async {
     state = const AsyncLoading();
     try {
       final repository = ref.read(reportRepositoryProvider);
-      final created = await repository.createReport(data, filePaths: filePaths);
+      final created = await repository.createReport(data, files: files);
       ref.invalidate(reportsProvider);
       state = AsyncData(created);
       return created;

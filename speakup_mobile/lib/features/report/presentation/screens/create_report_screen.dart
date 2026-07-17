@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:image_picker/image_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -34,9 +35,9 @@ class _CreateReportScreenState extends ConsumerState<CreateReportScreen> {
   String _perpetratorCharacteristics = '';
 
   // Step 2 data
-  final List<File> _photos = [];
-  final List<File> _videos = [];
-  final List<File> _documents = [];
+  final List<XFile> _photos = [];
+  final List<XFile> _videos = [];
+  final List<XFile> _documents = [];
   final TextEditingController _chronologyCtrl = TextEditingController();
 
   @override
@@ -117,10 +118,10 @@ class _CreateReportScreenState extends ConsumerState<CreateReportScreen> {
                     _documents.addAll(v);
                   }),
                   onNext: () {
-                    final filePaths = [
-                      ..._photos.map((f) => f.path),
-                      ..._videos.map((f) => f.path),
-                      ..._documents.map((f) => f.path),
+                    final files = [
+                      ..._photos,
+                      ..._videos,
+                      ..._documents,
                     ];
 
                     String dateStr = '';
@@ -145,8 +146,8 @@ class _CreateReportScreenState extends ConsumerState<CreateReportScreen> {
                   'perpetratorClass': _perpetratorClass,
                   'perpetratorCharacteristics': _perpetratorCharacteristics,
                   'description': _chronologyCtrl.text,
-                  'filePaths': filePaths,
-                  'hasFile': filePaths.isNotEmpty,
+                  'files': files,
+                  'hasFile': files.isNotEmpty,
                   'title': _selectedCategory.isNotEmpty
                       ? (_selectedCategory == 'Lainnya' ? _customCategory : _selectedCategory)
                       : 'Laporan Perundungan',
@@ -245,7 +246,7 @@ class _Step1Identitas extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        _buildAppBar(context),
+        _buildAppBar(context, 1, onBack: onBack),
         Expanded(
           child: SingleChildScrollView(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
@@ -646,9 +647,9 @@ class _Step1Identitas extends StatelessWidget {
 // ─── Step 2: Bukti ───────────────────────────────────────────────────────────
 
 class _Step2Bukti extends StatefulWidget {
-  final List<File> photos, videos, documents;
+  final List<XFile> photos, videos, documents;
   final TextEditingController chronologyCtrl;
-  final ValueChanged<List<File>> onPhotosChanged, onVideosChanged,
+  final ValueChanged<List<XFile>> onPhotosChanged, onVideosChanged,
       onDocumentsChanged;
   final VoidCallback onNext, onBack;
 
@@ -677,7 +678,7 @@ class _Step2BuktiState extends State<_Step2Bukti> {
       final picker = ImagePicker();
       final picked = await picker.pickMultiImage(imageQuality: 80);
       if (picked.isNotEmpty) {
-        final updated = [...widget.photos, ...picked.map((x) => File(x.path))];
+        final updated = [...widget.photos, ...picked];
         widget.onPhotosChanged(updated);
       }
     } catch (_) {}
@@ -689,7 +690,7 @@ class _Step2BuktiState extends State<_Step2Bukti> {
       final picked =
           await picker.pickVideo(source: ImageSource.gallery);
       if (picked != null) {
-        widget.onVideosChanged([...widget.videos, File(picked.path)]);
+        widget.onVideosChanged([...widget.videos, picked]);
       }
     } catch (_) {}
   }
@@ -700,12 +701,13 @@ class _Step2BuktiState extends State<_Step2Bukti> {
         type: FileType.custom,
         allowedExtensions: ['pdf', 'doc', 'docx', 'txt'],
         allowMultiple: true,
+        withData: true,
       );
       if (result != null) {
-        final newDocs = result.files
-            .where((f) => f.path != null)
-            .map((f) => File(f.path!))
-            .toList();
+        final newDocs = result.files.map((f) {
+          if (f.bytes != null) return XFile.fromData(f.bytes!, name: f.name);
+          return XFile(f.path!);
+        }).toList();
         widget.onDocumentsChanged([...widget.documents, ...newDocs]);
       }
     } catch (_) {}
@@ -715,7 +717,7 @@ class _Step2BuktiState extends State<_Step2Bukti> {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        _buildAppBar(context),
+        _buildAppBar(context, 2, onBack: widget.onBack),
         Expanded(
           child: SingleChildScrollView(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
@@ -936,7 +938,7 @@ class _Step2BuktiState extends State<_Step2Bukti> {
 
 // ─── Shared AppBar ───────────────────────────────────────────────────────────
 
-Widget _buildAppBar(BuildContext context) {
+Widget _buildAppBar(BuildContext context, int step, {VoidCallback? onBack}) {
   return Container(
     color: Colors.white,
     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -947,7 +949,13 @@ Widget _buildAppBar(BuildContext context) {
           IconButton(
             icon: const Icon(Icons.arrow_back_ios_new_rounded,
                 size: 20, color: AppTheme.neutral700),
-            onPressed: () => Navigator.of(context).maybePop(),
+                onPressed: () {
+                  if (onBack != null) {
+                    onBack();
+                  } else {
+                    Navigator.of(context).maybePop();
+                  }
+                },
           ),
           // Logo
           Container(

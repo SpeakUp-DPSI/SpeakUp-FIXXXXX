@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:responsive_framework/responsive_framework.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../providers/report_provider.dart';
 import '../../../authentication/presentation/widgets/auth_stepper.dart';
@@ -64,13 +66,13 @@ class _ReviewReportScreenState extends ConsumerState<ReviewReportScreen> {
       ];
     }
 
-    final filePaths =
-        widget.reportData['filePaths'] as List<String>?;
+    final files =
+        widget.reportData['files'] as List<XFile>?;
 
     try {
       final created = await ref
           .read(createReportProvider.notifier)
-          .create(data, filePaths: filePaths);
+          .create(data, files: files);
 
       ref.invalidate(reportsListProvider);
 
@@ -95,18 +97,16 @@ class _ReviewReportScreenState extends ConsumerState<ReviewReportScreen> {
   Widget build(BuildContext context) {
     final data = widget.reportData;
     final isAnon = data['isAnonymous'] == true;
-    final filePaths = (data['filePaths'] as List<dynamic>?) ?? [];
+    final files = (data['files'] as List<XFile>?) ?? [];
+    final isDesktop = ResponsiveBreakpoints.of(context).largerOrEqualTo(TABLET);
 
-    return Scaffold(
-      backgroundColor: Colors.white,
-      body: SafeArea(
-        child: Column(
-          children: [
-            _buildAppBar(context),
-            Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 20, vertical: 8),
+    Widget content = Column(
+      children: [
+        _buildAppBar(context),
+        Expanded(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(
+                horizontal: 20, vertical: 8),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -165,8 +165,8 @@ class _ReviewReportScreenState extends ConsumerState<ReviewReportScreen> {
                     const SizedBox(height: 16),
 
                     // ── Bukti Terlampir ────────────────────────────────
-                    if (filePaths.isNotEmpty) ...[
-                      _sectionTitle('Bukti Terlampir (${filePaths.length})'),
+                    if (files.isNotEmpty) ...[
+                      _sectionTitle('Bukti Terlampir (${files.length})'),
                       Container(
                         decoration: BoxDecoration(
                           color: Colors.white,
@@ -174,9 +174,8 @@ class _ReviewReportScreenState extends ConsumerState<ReviewReportScreen> {
                           border: Border.all(color: AppTheme.neutral300),
                         ),
                         child: Column(
-                          children: List.generate(filePaths.length, (i) {
-                            final path = filePaths[i].toString();
-                            final name = path.split('/').last;
+                          children: List.generate(files.length, (i) {
+                            final name = files[i].name;
                             final isVideo = name.toLowerCase().contains(
                                     RegExp(r'\.(mp4|mov|avi|mkv)$'));
                             return Column(
@@ -219,7 +218,7 @@ class _ReviewReportScreenState extends ConsumerState<ReviewReportScreen> {
                                     ],
                                   ),
                                 ),
-                                if (i < filePaths.length - 1)
+                                if (i < files.length - 1)
                                   const Divider(height: 1),
                               ],
                             );
@@ -306,7 +305,43 @@ class _ReviewReportScreenState extends ConsumerState<ReviewReportScreen> {
               ),
             ),
           ],
+        );
+
+    if (isDesktop) {
+      content = GestureDetector(
+        onTap: () => context.pop(),
+        behavior: HitTestBehavior.opaque,
+        child: Center(
+          child: GestureDetector(
+            onTap: () {}, // Prevent closing
+            child: Container(
+              constraints: const BoxConstraints(maxWidth: 480),
+              margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 40),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(24),
+                border: Border.all(
+                    color: AppTheme.neutral200.withValues(alpha: 0.5), width: 1),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.04),
+                    blurRadius: 32,
+                    offset: const Offset(0, 8),
+                  ),
+                ],
+              ),
+              clipBehavior: Clip.antiAlias,
+              child: content,
+            ),
+          ),
         ),
+      );
+    }
+
+    return Scaffold(
+      backgroundColor: isDesktop ? Colors.transparent : Colors.white,
+      body: SafeArea(
+        child: content,
       ),
     );
   }

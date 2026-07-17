@@ -167,13 +167,31 @@ final routerProvider = Provider<GoRouter>((ref) {
       // ─── Report routes (full-screen, pushed on top of shell) ───────────────
       GoRoute(
         path: '/report/create',
-        builder: (context, state) => const CreateReportScreen(),
+        pageBuilder: (context, state) => CustomTransitionPage(
+          key: state.pageKey,
+          opaque: false,
+          barrierColor: Colors.black.withOpacity(0.5),
+          barrierDismissible: true,
+          child: const CreateReportScreen(),
+          transitionsBuilder: (context, animation, secondaryAnimation, child) {
+            return FadeTransition(opacity: animation, child: child);
+          },
+        ),
       ),
       GoRoute(
         path: '/report/review',
-        builder: (context, state) {
+        pageBuilder: (context, state) {
           final extra = state.extra as Map<String, dynamic>? ?? {};
-          return ReviewReportScreen(reportData: extra);
+          return CustomTransitionPage(
+            key: state.pageKey,
+            opaque: false,
+            barrierColor: Colors.black.withOpacity(0.5),
+            barrierDismissible: true,
+            child: ReviewReportScreen(reportData: extra),
+            transitionsBuilder: (context, animation, secondaryAnimation, child) {
+              return FadeTransition(opacity: animation, child: child);
+            },
+          );
         },
       ),
       GoRoute(

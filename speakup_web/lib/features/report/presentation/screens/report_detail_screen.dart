@@ -596,13 +596,12 @@ class ReportDetailScreen extends ConsumerWidget {
     );
   }
 
-  Future<void> _handleValidation(BuildContext context, WidgetRef ref,
-      String reportId, String validationStatus) async {
+  Future<void> _handleValidation(BuildContext context, WidgetRef ref, String reportId, String status) async {
     try {
       final supabase = ref.read(supabaseClientProvider);
       await supabase.from('reports').update({
-        'status': validationStatus,
-        if (validationStatus == 'rejected') 'bk_note': 'Ditolak oleh guru BK',
+        'status': status,
+        if (status == 'rejected') 'bk_note': 'Ditolak oleh guru BK',
       }).eq('id', reportId);
       
       ref.invalidate(reportDetailProvider(reportId));
@@ -610,8 +609,8 @@ class ReportDetailScreen extends ConsumerWidget {
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(SnackBar(
             content: Text(
-                'Laporan ${validationStatus == 'valid' ? 'divalidasi' : 'ditolak'}'),
-            backgroundColor: validationStatus == 'rejected'
+                'Laporan ${status == 'valid' ? 'divalidasi' : 'ditolak'}'),
+            backgroundColor: status == 'rejected'
                 ? AppTheme.danger600
                 : AppTheme.success600,
           ));
