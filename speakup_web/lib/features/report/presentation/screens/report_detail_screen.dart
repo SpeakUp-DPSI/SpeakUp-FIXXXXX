@@ -290,7 +290,7 @@ class ReportDetailScreen extends ConsumerWidget {
                 const SizedBox(height: 12),
 
                 // ─── Aksi Validasi ────────────────────────────────────────
-                if (canValidate && report.status == 'waiting_validation') ...[
+                if (canValidate && (report.status == 'waiting_validation' || report.status == 'submitted')) ...[
                   const SizedBox(height: 4),
                   Row(
                     children: [
@@ -331,8 +331,8 @@ class ReportDetailScreen extends ConsumerWidget {
                   const SizedBox(height: 16),
                 ],
 
-                // ─── Aksi Mediasi (guru_bk/admin saat status processing) ──
-                if (canValidate && report.status == 'processing') ...[
+                // ─── Aksi Mediasi (guru_bk/admin saat status processing/valid) ──
+                if (canValidate && (report.status == 'processing' || report.status == 'valid')) ...[
                   const SizedBox(height: 4),
                   SizedBox(
                     width: double.infinity,
