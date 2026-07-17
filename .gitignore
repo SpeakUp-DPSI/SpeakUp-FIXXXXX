@@ -1,0 +1,44 @@
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Laravel / PHP
+speakup_backend/vendor/
+speakup_backend/.env
+speakup_backend/.env.backup
+speakup_backend/storage/logs/*.log
+speakup_backend/storage/framework/cache/
+speakup_backend/storage/framework/sessions/
+speakup_backend/storage/framework/views/
+speakup_backend/bootstrap/cache/
+speakup_backend/node_modules/
+speakup_backend/public/hot
+speakup_backend/public/storage
+
+# Flutter / Dart
+speakup_mobile/.dart_tool/
+speakup_mobile/.flutter-plugins
+speakup_mobile/.flutter-plugins-dependencies
+speakup_mobile/build/
+speakup_mobile/.packages
+speakup_mobile/pubspec.lock
+speakup_mobile/android/.gradle/
+speakup_mobile/android/local.properties
+speakup_mobile/android/key.properties
+speakup_mobile/ios/Pods/
+speakup_mobile/ios/.symlinks/
+speakup_mobile/ios/Flutter/flutter_export_environment.sh
+speakup_mobile/ios/Flutter/Generated.xcconfig
+speakup_mobile/macos/Flutter/GeneratedPluginRegistrant.swift
+speakup_mobile/linux/flutter/generated_plugin_registrant.cc
+speakup_mobile/linux/flutter/generated_plugin_registrant.h
+speakup_mobile/windows/flutter/generated_plugin_registrant.cc
+speakup_mobile/windows/flutter/generated_plugin_registrant.h
+
+# IDE / Editor
+.idea/
+.vscode/
+*.iml
+*.swp
+*.swo
