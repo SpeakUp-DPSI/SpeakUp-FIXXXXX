@@ -6,6 +6,7 @@ import '../../../authentication/presentation/providers/auth_provider.dart';
 
 import 'main_sidebar.dart';
 import 'widgets/web_header.dart';
+import '../../../../core/services/realtime_service.dart';
 
 /// Tab configuration for each role.
 class _TabConfig {
@@ -35,6 +36,20 @@ class MainWrapperScreen extends ConsumerStatefulWidget {
 }
 
 class _MainWrapperScreenState extends ConsumerState<MainWrapperScreen> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(realtimeServiceProvider).start();
+    });
+  }
+
+  @override
+  void dispose() {
+    ref.read(realtimeServiceProvider).stop();
+    super.dispose();
+  }
+
   String _getUserRole() {
     final authState = ref.read(authProvider);
     if (authState is AuthSuccess) {

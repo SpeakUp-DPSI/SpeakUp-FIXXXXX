@@ -1,18 +1,21 @@
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../../core/network/supabase_client.dart';
+import '../../../authentication/presentation/providers/auth_provider.dart';
 
-class SettingsScreen extends StatefulWidget {
+class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
 
   @override
-  State<SettingsScreen> createState() => _SettingsScreenState();
+  ConsumerState<SettingsScreen> createState() => _SettingsScreenState();
 }
 
-class _SettingsScreenState extends State<SettingsScreen> {
+class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   bool _notifPush = true;
   bool _notifEmail = false;
   bool _isLoading = true;
+  bool _isSaving = false;
 
   @override
   void initState() {
@@ -21,17 +24,52 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Future<void> _loadSettings() async {
-    final prefs = await SharedPreferences.getInstance();
-    setState(() {
-      _notifPush = prefs.getBool('notif_push') ?? true;
-      _notifEmail = prefs.getBool('notif_email') ?? false;
-      _isLoading = false;
-    });
+    final authState = ref.read(authProvider);
+    if (authState is! AuthSuccess) {
+      setState(() => _isLoading = false);
+      return;
+    }
+
+    try {
+      final supabase = ref.read(supabaseClientProvider);
+      final data = await supabase
+          .from('profiles')
+          .select('notif_push_enabled, notif_email_enabled')
+          .eq('id', authState.user.id)
+          .single();
+
+      setState(() {
+        _notifPush = data['notif_push_enabled'] ?? true;
+        _notifEmail = data['notif_email_enabled'] ?? false;
+        _isLoading = false;
+      });
+    } catch (_) {
+      setState(() => _isLoading = false);
+    }
   }
 
-  Future<void> _saveSetting(String key, bool value) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool(key, value);
+  Future<void> _saveSetting(String column, bool value) async {
+    final authState = ref.read(authProvider);
+    if (authState is! AuthSuccess) return;
+
+    setState(() => _isSaving = true);
+    try {
+      final supabase = ref.read(supabaseClientProvider);
+      await supabase
+          .from('profiles')
+          .update({column: value})
+          .eq('id', authState.user.id);
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Gagal menyimpan pengaturan. Coba lagi.'),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isSaving = false);
+    }
   }
 
   @override
@@ -63,23 +101,26 @@ class _SettingsScreenState extends State<SettingsScreen> {
         children: [
           SwitchListTile(
             title: const Text('Push Notifications'),
-            subtitle:
-                const Text('Menerima notifikasi langsung di perangkat'),
+            subtitle: const Text('Menerima notifikasi langsung di perangkat'),
             value: _notifPush,
-            onChanged: (val) {
-              setState(() => _notifPush = val);
-              _saveSetting('notif_push', val);
-            },
+            onChanged: _isSaving
+                ? null
+                : (val) {
+                    setState(() => _notifPush = val);
+                    _saveSetting('notif_push_enabled', val);
+                  },
             activeThumbColor: AppTheme.primary600,
           ),
           SwitchListTile(
             title: const Text('Email Notifications'),
             subtitle: const Text('Menerima pemberitahuan via email'),
             value: _notifEmail,
-            onChanged: (val) {
-              setState(() => _notifEmail = val);
-              _saveSetting('notif_email', val);
-            },
+            onChanged: _isSaving
+                ? null
+                : (val) {
+                    setState(() => _notifEmail = val);
+                    _saveSetting('notif_email_enabled', val);
+                  },
             activeThumbColor: AppTheme.primary600,
           ),
           const SizedBox(height: 24),
@@ -90,7 +131,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               borderRadius: BorderRadius.circular(12),
             ),
             child: const Text(
-              'Pengaturan ini menyimpan preferensi notifikasi Anda secara lokal di perangkat.',
+              'Pengaturan ini tersimpan ke akun Anda dan berlaku di semua perangkat.',
               style: TextStyle(fontSize: 12, color: AppTheme.neutral600),
             ),
           ),
