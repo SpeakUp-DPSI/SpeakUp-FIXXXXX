@@ -17,6 +17,8 @@ class ReportListScreen extends ConsumerStatefulWidget {
 class _ReportListScreenState extends ConsumerState<ReportListScreen> {
   String _selectedStatus = '';
   String _selectedSort = 'newest';
+  bool _isLoadingMore = false;
+  final ScrollController _scrollController = ScrollController();
 
   final List<Map<String, String>> _statusFilters = [
     {'value': '', 'label': 'Semua'},
@@ -26,6 +28,43 @@ class _ReportListScreenState extends ConsumerState<ReportListScreen> {
     {'value': 'mediation', 'label': 'Mediasi'},
     {'value': 'completed', 'label': 'Selesai'},
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController.addListener(_onScroll);
+  }
+
+  @override
+  void dispose() {
+    _scrollController.removeListener(_onScroll);
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _onScroll() {
+    if (!_scrollController.hasClients) return;
+    final nearBottom = _scrollController.position.pixels >=
+        _scrollController.position.maxScrollExtent - 200;
+    if (nearBottom && !_isLoadingMore) {
+      _loadMore();
+    }
+  }
+
+  Future<void> _loadMore() async {
+    setState(() => _isLoadingMore = true);
+    await ref.read(reportsProvider.notifier).loadMore();
+    if (mounted) setState(() => _isLoadingMore = false);
+  }
+
+  // Query ulang ke server setiap kali filter status / sort berubah,
+  // supaya hasilnya benar walau totalnya lebih dari 1 halaman.
+  void _applyServerFilter() {
+    ref.read(reportsProvider.notifier).filter(
+          status: _selectedStatus.isEmpty ? null : _selectedStatus,
+          sort: _selectedSort,
+        );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -103,8 +142,10 @@ class _ReportListScreenState extends ConsumerState<ReportListScreen> {
                 final selected =
                     activeFirst || (_selectedStatus == f['value'] && i != 0);
                 return GestureDetector(
-                  onTap: () => setState(
-                      () => _selectedStatus = f['value']!),
+                  onTap: () {
+                    setState(() => _selectedStatus = f['value']!);
+                    _applyServerFilter();
+                  },
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 200),
                     padding: const EdgeInsets.symmetric(
@@ -137,12 +178,11 @@ class _ReportListScreenState extends ConsumerState<ReportListScreen> {
           // ─── Count + Sort ──────────────────────────────────────────────
           Consumer(
             builder: (context, ref, _) {
-              final reportsAsync = ref.watch(reportsListProvider);
+              final reportsAsync = ref.watch(reportsProvider);
               return reportsAsync.when(
                 loading: () => const SizedBox.shrink(),
                 error: (e, _) => const SizedBox.shrink(),
-                data: (reports) {
-                  final count = _filterReports(reports).length;
+                data: (paginated) {
                   return Padding(
                     padding: const EdgeInsets.symmetric(
                         horizontal: 16, vertical: 8),
@@ -152,7 +192,7 @@ class _ReportListScreenState extends ConsumerState<ReportListScreen> {
                           text: TextSpan(
                             children: [
                               TextSpan(
-                                text: '$count ',
+                                text: '${paginated.total} ',
                                 style: const TextStyle(
                                     fontWeight: FontWeight.bold,
                                     fontSize: 15,
@@ -172,8 +212,11 @@ class _ReportListScreenState extends ConsumerState<ReportListScreen> {
                                 fontSize: 12, color: AppTheme.neutral400)),
                         const SizedBox(width: 4),
                         GestureDetector(
-                          onTap: () => setState(() => _selectedSort =
-                              _selectedSort == 'newest' ? 'oldest' : 'newest'),
+                          onTap: () {
+                            setState(() => _selectedSort =
+                                _selectedSort == 'newest' ? 'oldest' : 'newest');
+                            _applyServerFilter();
+                          },
                           child: Row(
                             children: [
                               Text(
@@ -206,18 +249,10 @@ class _ReportListScreenState extends ConsumerState<ReportListScreen> {
     );
   }
 
-  List<ReportModel> _filterReports(List<ReportModel> all) {
-    var filtered = all;
-    if (_selectedStatus.isNotEmpty) {
-      filtered = all.where((r) => r.status == _selectedStatus).toList();
-    }
-    return filtered;
-  }
-
   Widget _buildReportList() {
     return Consumer(
       builder: (context, ref, _) {
-        final reportsAsync = ref.watch(reportsListProvider);
+        final reportsAsync = ref.watch(reportsProvider);
 
         return reportsAsync.when(
           loading: () =>
@@ -228,10 +263,10 @@ class _ReportListScreenState extends ConsumerState<ReportListScreen> {
             subtitle: 'Periksa koneksi internet Anda.',
             iconColor: AppTheme.danger600,
           ),
-          data: (reports) {
-            final filtered = _filterReports(reports);
+          data: (paginated) {
+            final reports = paginated.data;
 
-            if (filtered.isEmpty) {
+            if (reports.isEmpty) {
               return EmptyStateWidget(
                 icon: Icons.inbox_outlined,
                 title: 'Tidak ada laporan',
@@ -240,12 +275,26 @@ class _ReportListScreenState extends ConsumerState<ReportListScreen> {
               );
             }
             return RefreshIndicator(
-              onRefresh: () async => ref.invalidate(reportsListProvider),
+              onRefresh: () async =>
+                  ref.read(reportsProvider.notifier).refresh(),
               child: ListView.builder(
+                controller: _scrollController,
                 padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
-                itemCount: filtered.length,
+                itemCount: reports.length + (_isLoadingMore ? 1 : 0),
                 itemBuilder: (context, index) {
-                  return _buildReportCard(filtered[index], context);
+                  if (index >= reports.length) {
+                    return const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 16),
+                      child: Center(
+                        child: SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        ),
+                      ),
+                    );
+                  }
+                  return _buildReportCard(reports[index], context);
                 },
               ),
             );

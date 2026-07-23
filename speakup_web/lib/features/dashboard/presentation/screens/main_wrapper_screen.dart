@@ -91,11 +91,11 @@ class _MainWrapperScreenState extends ConsumerState<MainWrapperScreen> {
         _TabConfig(branchIndex: 4, icon: Icons.person_outline_rounded, activeIcon: Icons.person_rounded, label: 'Profil'),
       ];
     } else {
-      // Student (default): Beranda, Riwayat, [FAB], Status, Profil
+      // Student (default): Beranda, Riwayat, [FAB], Notifikasi, Profil
       return const [
         _TabConfig(branchIndex: 0, icon: Icons.home_outlined, activeIcon: Icons.home_rounded, label: 'Beranda'),
         _TabConfig(branchIndex: 1, icon: Icons.history_outlined, activeIcon: Icons.history_rounded, label: 'Riwayat'),
-        _TabConfig(branchIndex: 3, icon: Icons.list_alt_outlined, activeIcon: Icons.list_alt_rounded, label: 'Status'),
+        _TabConfig(branchIndex: 3, icon: Icons.notifications_outlined, activeIcon: Icons.notifications_rounded, label: 'Notifikasi'),
         _TabConfig(branchIndex: 4, icon: Icons.person_outline_rounded, activeIcon: Icons.person_rounded, label: 'Profil'),
       ];
     }
