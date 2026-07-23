@@ -21,7 +21,7 @@ class _ReportListScreenState extends ConsumerState<ReportListScreen> {
   final List<Map<String, String>> _statusFilters = [
     {'value': '', 'label': 'Semua'},
     {'value': 'waiting_validation', 'label': 'Menunggu Validasi'},
-    {'value': 'processing', 'label': 'Valid'},
+    {'value': 'valid', 'label': 'Valid'},
     {'value': 'processing', 'label': 'Diproses'},
     {'value': 'mediation', 'label': 'Mediasi'},
     {'value': 'completed', 'label': 'Selesai'},
@@ -421,6 +421,8 @@ class _ReportListScreenState extends ConsumerState<ReportListScreen> {
     switch (status) {
       case 'waiting_validation':
         return AppTheme.warning600;
+      case 'valid':
+        return AppTheme.info600;
       case 'processing':
         return AppTheme.primary600;
       case 'mediation':
@@ -438,6 +440,8 @@ class _ReportListScreenState extends ConsumerState<ReportListScreen> {
     switch (status) {
       case 'waiting_validation':
         return 'Menunggu';
+      case 'valid':
+        return 'Valid';
       case 'processing':
         return 'Diproses';
       case 'mediation':

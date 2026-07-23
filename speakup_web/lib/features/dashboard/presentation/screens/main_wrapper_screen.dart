@@ -57,7 +57,7 @@ class _MainWrapperScreenState extends ConsumerState<MainWrapperScreen> {
     } else if (role.contains('kepala') || role.contains('kepsek')) {
       return const [
         _TabConfig(branchIndex: 0, icon: Icons.home_outlined, activeIcon: Icons.home_rounded, label: 'Beranda'),
-        _TabConfig(branchIndex: 1, icon: Icons.monitor_outlined, activeIcon: Icons.monitor_rounded, label: 'Monitoring'),
+        _TabConfig(branchIndex: 1, icon: Icons.article_outlined, activeIcon: Icons.article_rounded, label: 'Laporan'),
         _TabConfig(branchIndex: 3, icon: Icons.notifications_outlined, activeIcon: Icons.notifications_rounded, label: 'Notifikasi'),
         _TabConfig(branchIndex: 4, icon: Icons.person_outline_rounded, activeIcon: Icons.person_rounded, label: 'Profil'),
       ];

@@ -17,6 +17,11 @@ class TrendChartScreen extends ConsumerWidget {
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_new_rounded,
+              size: 20, color: AppTheme.neutral700),
+          onPressed: () => context.pop(),
+        ),
 
         title: const Text(
           'Grafik Tren Perundungan',
@@ -44,7 +49,7 @@ class TrendChartScreen extends ConsumerWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _buildMonthlyTrendLineChart([{'month': 'Jan', 'total': 12}, {'month': 'Feb', 'total': 19}, {'month': 'Mar', 'total': 15}]),
+                _buildMonthlyTrendLineChart([{'month': 'Jan', 'count': 12}, {'month': 'Feb', 'count': 19}, {'month': 'Mar', 'count': 15}]),
                 const SizedBox(height: 24),
                 _buildCategoryBarChart([{'category': 'Fisik', 'count': 20}, {'category': 'Verbal', 'count': 45}, {'category': 'Siber', 'count': 35}]),
               ],

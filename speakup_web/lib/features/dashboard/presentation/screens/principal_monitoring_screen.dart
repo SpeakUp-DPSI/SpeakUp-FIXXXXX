@@ -52,6 +52,23 @@ class _PrincipalMonitoringScreenState
 
     return Scaffold(
       backgroundColor: const Color(0xFFF0F4FA),
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_new_rounded,
+              size: 20, color: AppTheme.neutral700),
+          onPressed: () => context.pop(),
+        ),
+        title: const Text(
+          'Monitoring',
+          style: TextStyle(
+              color: AppTheme.neutral900,
+              fontWeight: FontWeight.bold,
+              fontSize: 18),
+        ),
+        centerTitle: true,
+      ),
       body: SafeArea(
         child: RefreshIndicator(
           onRefresh: () async {

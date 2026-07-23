@@ -6,6 +6,7 @@ import '../../../../core/theme/app_theme.dart';
 import '../providers/dashboard_provider.dart';
 import '../../../report/presentation/providers/report_provider.dart';
 import '../../../report/data/models/report_model.dart';
+import '../../utils/pdf_export_helper.dart';
 
 // ─── Screen ───────────────────────────────────────────────────────────────────
 
@@ -114,6 +115,23 @@ class _PrincipalRecapScreenState extends ConsumerState<PrincipalRecapScreen> {
 
     return Scaffold(
       backgroundColor: const Color(0xFFF0F4FA),
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_new_rounded,
+              size: 20, color: AppTheme.neutral700),
+          onPressed: () => context.pop(),
+        ),
+        title: const Text(
+          'Rekap Laporan',
+          style: TextStyle(
+              color: AppTheme.neutral900,
+              fontWeight: FontWeight.bold,
+              fontSize: 18),
+        ),
+        centerTitle: true,
+      ),
       body: SafeArea(
         child: RefreshIndicator(
           onRefresh: () async {
@@ -358,21 +376,46 @@ class _PrincipalRecapScreenState extends ConsumerState<PrincipalRecapScreen> {
   }
 
   void _exportPdf() {
+    final reportsAsync = ref.read(reportsListProvider);
+    if (!reportsAsync.hasValue) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Data belum siap untuk diekspor'), backgroundColor: AppTheme.warning600),
+      );
+      return;
+    }
+
+    final filtered = _applyFilters(reportsAsync.value!);
+
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Row(
           children: [
             const Icon(Icons.info_outline, color: Colors.white, size: 18),
             const SizedBox(width: 10),
-            Expanded(child: Text('Mengekspor periode $_periodLabel…')),
+            const Expanded(child: Text('Mengekspor PDF...')),
           ],
         ),
         behavior: SnackBarBehavior.floating,
         backgroundColor: AppTheme.primary600,
         shape:
             RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        duration: const Duration(seconds: 2),
       ),
     );
+
+    PdfExportHelper.generateAndPrintRecap(
+      reports: filtered,
+      periodLabel: _periodLabel,
+    ).catchError((e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Gagal mengekspor PDF: $e'),
+            backgroundColor: AppTheme.danger600,
+          ),
+        );
+      }
+    });
   }
 
   // ── Stat Cards ───────────────────────────────────────────────────────────────

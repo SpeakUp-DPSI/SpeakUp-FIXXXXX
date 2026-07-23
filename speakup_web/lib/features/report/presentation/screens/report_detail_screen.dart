@@ -687,6 +687,8 @@ class ReportDetailScreen extends ConsumerWidget {
     switch (status) {
       case 'waiting_validation':
         return AppTheme.warning600;
+      case 'valid':
+        return AppTheme.info600;
       case 'processing':
         return AppTheme.primary600;
       case 'mediation':
@@ -704,6 +706,8 @@ class ReportDetailScreen extends ConsumerWidget {
     switch (status) {
       case 'waiting_validation':
         return 'Menunggu Validasi';
+      case 'valid':
+        return 'Valid';
       case 'processing':
         return 'Diproses';
       case 'mediation':
