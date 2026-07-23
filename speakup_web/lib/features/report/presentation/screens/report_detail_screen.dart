@@ -6,6 +6,7 @@ import '../../../../core/network/supabase_client.dart';
 import '../../../../core/widgets/empty_state_widget.dart';
 import '../providers/report_provider.dart';
 import 'package:go_router/go_router.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class ReportDetailScreen extends ConsumerWidget {
   final String id;
@@ -392,7 +393,55 @@ class ReportDetailScreen extends ConsumerWidget {
                     ),
                   ),
                   const SizedBox(height: 16),
+                ],
 
+                // ─── Bukti Pendukung ──────────────────────────────────────
+                if (report.evidence != null && report.evidence!.isNotEmpty) ...[
+                  _sectionCard(
+                    title: 'Bukti Pendukung',
+                    icon: Icons.attachment,
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+                      child: Column(
+                        children: [
+                          for (var ev in report.evidence!)
+                            Container(
+                              margin: const EdgeInsets.only(bottom: 8),
+                              decoration: BoxDecoration(
+                                color: AppTheme.neutral50,
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(color: AppTheme.neutral200),
+                              ),
+                              child: ListTile(
+                                leading: Container(
+                                  padding: const EdgeInsets.all(8),
+                                  decoration: BoxDecoration(
+                                    color: AppTheme.primary50,
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: const Icon(Icons.file_present, color: AppTheme.primary600, size: 20),
+                                ),
+                                title: Text(
+                                  ev['file_name']?.toString() ?? 'Bukti Lampiran',
+                                  style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.neutral900),
+                                ),
+                                trailing: const Icon(Icons.open_in_new, size: 16, color: AppTheme.primary600),
+                                onTap: () async {
+                                  final urlString = ev['file_url']?.toString();
+                                  if (urlString != null && urlString.isNotEmpty) {
+                                    final url = Uri.parse(urlString);
+                                    if (await canLaunchUrl(url)) {
+                                      await launchUrl(url, mode: LaunchMode.externalApplication);
+                                    }
+                                  }
+                                },
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
                 ],
 
                 // ─── Status History ────────────────────────────────────────
@@ -601,15 +650,19 @@ class ReportDetailScreen extends ConsumerWidget {
       final supabase = ref.read(supabaseClientProvider);
       await supabase.from('reports').update({
         'status': status,
-        if (status == 'rejected') 'bk_note': 'Ditolak oleh guru BK',
       }).eq('id', reportId);
       
       ref.invalidate(reportDetailProvider(reportId));
       ref.invalidate(reportsListProvider);
         if (context.mounted) {
+          String message = '';
+          if (status == 'valid') message = 'Laporan divalidasi';
+          else if (status == 'rejected') message = 'Laporan ditolak';
+          else if (status == 'completed') message = 'Laporan diselesaikan';
+          else message = 'Status laporan diperbarui';
+
           ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            content: Text(
-                'Laporan ${status == 'valid' ? 'divalidasi' : 'ditolak'}'),
+            content: Text(message),
             backgroundColor: status == 'rejected'
                 ? AppTheme.danger600
                 : AppTheme.success600,

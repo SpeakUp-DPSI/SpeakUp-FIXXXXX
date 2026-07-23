@@ -130,7 +130,7 @@ class ReportRemoteDataSource {
   Future<void> updateStatus(String reportId, String status, {String? notes}) async {
     try {
       final updateData = {'status': status};
-      if (notes != null) updateData['bk_note'] = notes;
+      // if (notes != null) updateData['bk_note'] = notes;
 
       await supabaseClient.from('reports').update(updateData).eq('id', reportId);
     } catch (e) {

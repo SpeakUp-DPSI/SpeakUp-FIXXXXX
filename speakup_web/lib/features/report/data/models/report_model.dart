@@ -43,6 +43,7 @@ class ReportModel {
   final List<ReportParticipant> participants;
   final Map<String, dynamic>? reporter;
   final List<dynamic>? statusHistories;
+  final List<dynamic>? evidence;
 
   ReportModel({
     required this.id,
@@ -60,6 +61,7 @@ class ReportModel {
     this.participants = const [],
     this.reporter,
     this.statusHistories,
+    this.evidence,
   });
 
   factory ReportModel.fromJson(Map<String, dynamic> json) {
@@ -82,6 +84,7 @@ class ReportModel {
           [],
       reporter: json['reporter'] as Map<String, dynamic>?,
       statusHistories: json['status_histories'] as List<dynamic>?,
+      evidence: json['evidence'] as List<dynamic>?,
     );
   }
 
@@ -109,6 +112,7 @@ class ReportModel {
     String? reportedId,
     List<ReportParticipant>? participants,
     Map<String, dynamic>? reporter,
+    List<dynamic>? evidence,
   }) {
     return ReportModel(
       id: id ?? this.id,
@@ -126,6 +130,7 @@ class ReportModel {
       participants: participants ?? this.participants,
       reporter: reporter ?? this.reporter,
       statusHistories: statusHistories ?? this.statusHistories,
+      evidence: evidence ?? this.evidence,
     );
   }
 }

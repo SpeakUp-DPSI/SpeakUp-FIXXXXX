@@ -26,6 +26,7 @@ class FollowUpRemoteDataSource {
       final insertData = {
         ...data,
         'report_id': reportId,
+        'executor_id': supabaseClient.auth.currentUser?.id,
       };
       final response = await supabaseClient
           .from('follow_ups')
