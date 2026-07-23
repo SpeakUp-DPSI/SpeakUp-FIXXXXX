@@ -250,7 +250,7 @@ class ReportDetailScreen extends ConsumerWidget {
                 // ─── Identitas Pelapor ────────────────────────────────────
                 _personCard(
                   title: 'Identitas Pelapor',
-                  name: report.reporter?['name']?.toString() ?? (report.isAnonymous ? 'Anonim' : 'Siswa'),
+                  name: report.isAnonymous ? 'Anonim' : (report.reporter?['name']?.toString() ?? 'Siswa'),
                   role: 'Pelapor',
                   className: null,
                   isAnonymous: report.isAnonymous,

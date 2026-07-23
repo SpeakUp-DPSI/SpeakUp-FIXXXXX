@@ -26,8 +26,8 @@ class _MediationScreenState extends ConsumerState<MediationScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(status == 'accepted' ? 'Kehadiran dikonfirmasi.' : 'Anda menyatakan berhalangan.'),
-            backgroundColor: status == 'accepted' ? AppTheme.success600 : AppTheme.danger600,
+            content: Text(status == 'confirmed' ? 'Kehadiran dikonfirmasi.' : 'Anda menyatakan berhalangan.'),
+            backgroundColor: status == 'confirmed' ? AppTheme.success600 : AppTheme.danger600,
           ),
         );
       }
@@ -152,15 +152,19 @@ class _MediationScreenState extends ConsumerState<MediationScreen> {
     final statusColor = _getStatusColor(mediation.status);
     final myStatus = mediation.myStatus(currentUserId);
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppTheme.neutral300),
-      ),
-      child: Column(
+    return GestureDetector(
+      onTap: () {
+        context.push('/mediation-detail', extra: mediation);
+      },
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: AppTheme.neutral300),
+        ),
+        child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
@@ -243,7 +247,7 @@ class _MediationScreenState extends ConsumerState<MediationScreen> {
                       backgroundColor: AppTheme.success600,
                       foregroundColor: Colors.white,
                     ),
-                    onPressed: () => _updateStatus(mediation.id, 'accepted'),
+                    onPressed: () => _updateStatus(mediation.id, 'confirmed'),
                     child: const Text('Hadir'),
                   ),
                 ),
@@ -252,7 +256,7 @@ class _MediationScreenState extends ConsumerState<MediationScreen> {
           ],
         ],
       ),
-    );
+    ));
   }
 
   Widget _buildInfoRow(IconData icon, String label, String value) {
@@ -289,7 +293,7 @@ class _MediationScreenState extends ConsumerState<MediationScreen> {
 
   String _formatParticipantStatus(String status) {
     switch (status) {
-      case 'accepted': return 'Hadir';
+      case 'confirmed': return 'Hadir';
       case 'rejected': return 'Berhalangan';
       default: return 'Belum Konfirmasi';
     }
@@ -297,7 +301,7 @@ class _MediationScreenState extends ConsumerState<MediationScreen> {
 
   Color _getParticipantStatusColor(String status) {
     switch (status) {
-      case 'accepted': return AppTheme.success600;
+      case 'confirmed': return AppTheme.success600;
       case 'rejected': return AppTheme.danger600;
       default: return AppTheme.warning600;
     }

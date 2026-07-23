@@ -320,7 +320,7 @@ class _MediationDetailPageState extends ConsumerState<MediationDetailPage>
           ...m.participants.map((p) {
             Color pColor = AppTheme.warning600;
             String pLabel = 'Menunggu';
-            if (p.status == 'accepted') {
+            if (p.status == 'confirmed') {
               pColor = AppTheme.success600;
               pLabel = 'Hadir';
             } else if (p.status == 'rejected') {
@@ -728,7 +728,31 @@ class _MediationDetailPageState extends ConsumerState<MediationDetailPage>
                 ),
               ),
             )
-          : Row(
+          : isGuruBK && m.participants.any((p) => p.status == 'confirmed')
+              ? SizedBox(
+                  width: double.infinity,
+                  height: 52,
+                  child: ElevatedButton.icon(
+                    onPressed: () => _showCompleteMediationDialog(context, m),
+                    icon: const Icon(Icons.fact_check_rounded, color: Colors.white),
+                    label: const Text(
+                      'Selesaikan Masalah',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppTheme.primary600,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      elevation: 0,
+                    ),
+                  ),
+                )
+              : Row(
               children: [
                 Expanded(
                   child: SizedBox(
@@ -823,6 +847,102 @@ class _MediationDetailPageState extends ConsumerState<MediationDetailPage>
   }
 
   // ─── Helpers ───────────────────────────────────────────────────────────────
+
+  void _showCompleteMediationDialog(BuildContext context, MediationModel m) {
+    final resultController = TextEditingController();
+    bool isLoading = false;
+    
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+              title: const Text('Selesaikan Mediasi'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text('Masukkan hasil mediasi:'),
+                  const SizedBox(height: 8),
+                  TextField(
+                    controller: resultController,
+                    decoration: const InputDecoration(
+                      hintText: 'Hasil kesepakatan...',
+                      border: OutlineInputBorder(),
+                    ),
+                    maxLines: 4,
+                  ),
+                ],
+              ),
+              actions: [
+                if (!isLoading)
+                  TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: const Text('Batal'),
+                  ),
+                ElevatedButton(
+                  onPressed: isLoading
+                      ? null
+                      : () async {
+                          if (resultController.text.trim().isEmpty) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Hasil mediasi wajib diisi'),
+                                backgroundColor: AppTheme.warning600,
+                              ),
+                            );
+                            return;
+                          }
+                          
+                          setState(() => isLoading = true);
+                          
+                          try {
+                            await ref.read(mediationRemoteDataSourceProvider).updateMediationStatus(
+                                  m.id,
+                                  {
+                                    'status': 'completed',
+                                    'result': resultController.text.trim(),
+                                  },
+                                );
+                            ref.invalidate(myMediationsProvider);
+                            if (context.mounted) {
+                              Navigator.pop(context); // pop dialog
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('Mediasi berhasil diselesaikan'),
+                                  backgroundColor: AppTheme.success600,
+                                ),
+                              );
+                              context.pop(); // pop detail page
+                            }
+                          } catch (e) {
+                            setState(() => isLoading = false);
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text('Gagal menyelesaikan mediasi: $e'),
+                                  backgroundColor: AppTheme.danger600,
+                                ),
+                              );
+                            }
+                          }
+                        },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppTheme.success600,
+                    foregroundColor: Colors.white,
+                  ),
+                  child: isLoading
+                      ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                      : const Text('Selesai'),
+                ),
+              ],
+            );
+          }
+        );
+      },
+    );
+  }
 
   String _formatStatus(String status) {
     switch (status) {
